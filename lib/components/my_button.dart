@@ -20,7 +20,7 @@ class MyButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: MediaQuery.of(context).size.height / 17,
-          width: MediaQuery.of(context).size.width / 1.3,
+          width: MediaQuery.of(context).size.width / 1.2,
           decoration: decoration,
           child: Center(
             child: Text(
