@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guff_app/components/logo_container.dart';
 import 'package:guff_app/components/my_button.dart';
 import 'package:guff_app/style_models/button_styles.dart';
 import 'package:guff_app/style_models/font_styles.dart';
@@ -66,23 +67,6 @@ class CenterContainer extends StatelessWidget {
             "Now! Quick Login using Touch ID",
           ),
         ],
-      ),
-    );
-  }
-}
-
-class LogoContainer extends StatelessWidget {
-  const LogoContainer({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height / 10,
-      child: Image.asset(
-        'assets/images/light/logo_1.png',
-        fit: BoxFit.cover,
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:guff_app/screens/homepage.dart';
 import 'package:guff_app/screens/login.dart';
 import 'package:guff_app/screens/onboard.dart';
+import 'package:guff_app/screens/settings.dart';
 import 'package:guff_app/screens/signup.dart';
 import 'package:guff_app/themes/light_mode.dart';
 
@@ -23,8 +24,8 @@ class MyApp extends StatelessWidget {
         '/register': (context) => SignUpPage(),
         '/login': (context) => LoginPage(),
         '/home': (context) => HomePage(),
+        '/profile': (context) => SettingsPage(),
       },
-      // home: LoginPage(),
     );
   }
 }
