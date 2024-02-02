@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:guff_app/components/logo_container.dart';
-import 'package:guff_app/components/my_button.dart';
-import 'package:guff_app/components/my_textfield.dart';
+import 'package:guff_app/components/shared/logo_container.dart';
+import 'package:guff_app/components/shared/my_button.dart';
+import 'package:guff_app/components/shared/my_textfield.dart';
 import 'package:guff_app/style_models/button_styles.dart';
 import 'package:guff_app/style_models/font_styles.dart';
 import 'package:guff_app/style_models/textfield_styles.dart';
@@ -70,12 +70,15 @@ class CenterContainer extends StatelessWidget {
           Wrap(
             children: [
               MyTextField(
+                textInputType: TextInputType.name,
                 inputDecoration: TextFieldStyles.usernameStyle,
               ),
               MyTextField(
+                textInputType: TextInputType.emailAddress,
                 inputDecoration: TextFieldStyles.emailStyle,
               ),
               MyTextField(
+                textInputType: TextInputType.visiblePassword,
                 inputDecoration: TextFieldStyles.passwordStyle,
               ),
             ],

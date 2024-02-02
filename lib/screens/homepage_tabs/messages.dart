@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:guff_app/components/homepage/message_tile.dart';
+import 'package:guff_app/components/homepage/story_container.dart';
 
 class MessagesPage extends StatefulWidget {
   const MessagesPage({super.key});
@@ -17,20 +19,11 @@ class _MessagesPageState extends State<MessagesPage> {
             flex: 1,
             child: Container(
               child: ListView.builder(
+                padding: EdgeInsets.zero,
                 scrollDirection: Axis.horizontal,
                 itemCount: 5,
                 itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Container(
-                      height: 100,
-                      width: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.red,
-                      ),
-                    ),
-                  );
+                  return StoryTile();
                 },
               ),
             ),
@@ -39,10 +32,20 @@ class _MessagesPageState extends State<MessagesPage> {
             flex: 3,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.deepOrangeAccent.withAlpha(190),
+                color: Colors.grey.shade500,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(40),
                   topRight: Radius.circular(40),
+                ),
+              ),
+              child: Container(
+                padding: EdgeInsets.only(top: 30),
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: 5,
+                  itemBuilder: (context, index) {
+                    return MessageTile();
+                  },
                 ),
               ),
             ),
