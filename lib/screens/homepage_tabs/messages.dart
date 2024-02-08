@@ -10,6 +10,7 @@ class MessagesPage extends StatefulWidget {
 }
 
 class _MessagesPageState extends State<MessagesPage> {
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -29,8 +30,9 @@ class _MessagesPageState extends State<MessagesPage> {
             ),
           ),
           Expanded(
-            flex: 3,
-            child: Container(
+            flex: 4,
+            child: AnimatedContainer(
+              duration: Duration(),
               decoration: BoxDecoration(
                 color: Colors.grey.shade500,
                 borderRadius: BorderRadius.only(
