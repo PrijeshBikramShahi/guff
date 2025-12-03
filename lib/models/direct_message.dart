@@ -5,6 +5,7 @@ class DirectMessage {
   final String senderId;
   final String text;
   final DateTime createdAt;
+  final DateTime? readAt;
 
   DirectMessage({
     required this.id,
@@ -12,6 +13,7 @@ class DirectMessage {
     required this.senderId,
     required this.text,
     required this.createdAt,
+    this.readAt,
   });
 
   /// Create DirectMessage from Supabase JSON response
@@ -22,6 +24,9 @@ class DirectMessage {
       senderId: json['sender_id'] as String,
       text: json['text'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
     );
   }
 
@@ -40,6 +45,9 @@ class DirectMessage {
   bool isSentBy(String userId) {
     return senderId == userId;
   }
+
+  /// Check if message has been read
+  bool get isRead => readAt != null;
 
   @override
   String toString() {

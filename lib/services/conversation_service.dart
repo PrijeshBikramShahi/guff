@@ -138,5 +138,48 @@ class ConversationService {
       return null;
     }
   }
+
+  /// Mark all messages in a conversation as read
+  Future<void> markConversationAsRead(String conversationId) async {
+    try {
+      final currentUserId = supabase.auth.currentUser?.id;
+      if (currentUserId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Call the database function to mark messages as read
+      await supabase.rpc('mark_messages_as_read', params: {
+        'p_conversation_id': conversationId,
+        'p_user_id': currentUserId,
+      });
+
+      print('✅ Messages marked as read');
+    } catch (e) {
+      print('❌ Error marking messages as read: $e');
+      rethrow;
+    }
+  }
+
+  /// Get unread message count for a conversation
+  Future<int> getUnreadCount(String conversationId) async {
+    try {
+      final currentUserId = supabase.auth.currentUser?.id;
+      if (currentUserId == null) {
+        return 0;
+      }
+
+      final response = await supabase
+          .from('direct_messages')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', currentUserId) // Messages from other user
+          .isFilter('read_at', null); // Not read yet
+
+      return (response as List).length;
+    } catch (e) {
+      print('❌ Error getting unread count: $e');
+      return 0;
+    }
+  }
 }
 

@@ -32,10 +32,20 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadOtherUser();
+    // Mark conversation as read when opening
+    _markAsRead();
     // Scroll to bottom after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+  }
+
+  Future<void> _markAsRead() async {
+    try {
+      await _conversationService.markConversationAsRead(widget.conversationId);
+    } catch (e) {
+      print('❌ Error marking as read: $e');
+    }
   }
 
   @override
@@ -267,15 +277,33 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                       ),
                                     ),
-                                    // Time below message
+                                    // Time and read receipt below message
                                     Padding(
                                       padding: const EdgeInsets.only(top: 4.0, left: 8.0, right: 8.0),
-                                      child: Text(
-                                        TimeFormatter.formatTime(message.createdAt),
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.grey.shade500,
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            TimeFormatter.formatTime(message.createdAt),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey.shade500,
+                                            ),
+                                          ),
+                                          // Read receipt (only for sent messages)
+                                          if (isSentByMe) ...[
+                                            const SizedBox(width: 4),
+                                            Icon(
+                                              message.isRead
+                                                  ? Icons.done_all
+                                                  : Icons.done,
+                                              size: 12,
+                                              color: message.isRead
+                                                  ? Colors.blue
+                                                  : Colors.grey.shade500,
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
                                   ],

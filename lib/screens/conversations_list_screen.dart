@@ -7,6 +7,7 @@ import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import 'chat_screen.dart';
 import 'users_list_screen.dart';
+import 'profile_screen.dart';
 
 /// Screen showing list of all conversations (DMs)
 class ConversationsListScreen extends StatefulWidget {
@@ -27,6 +28,18 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
       appBar: AppBar(
         title: const Text('Messages'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Sign out',
@@ -152,36 +165,108 @@ class _ConversationListItem extends StatelessWidget {
         return FutureBuilder<DirectMessage?>(
           future: conversationService.getLastMessage(conversation.id),
           builder: (context, messageSnapshot) {
-            final lastMessage = messageSnapshot.data;
-            final preview = lastMessage?.text ?? 'No messages yet';
+                          final lastMessage = messageSnapshot.data;
+                          final preview = lastMessage?.text ?? 'No messages yet';
 
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: user?.avatarUrl != null
-                    ? ClipOval(
-                        child: Image.network(
-                          user!.avatarUrl!,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Text(user.initials),
-                        ),
-                      )
-                    : Text(user?.initials ?? 'U'),
-              ),
-              title: Text(userName),
-              subtitle: Text(
-                preview,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: lastMessage != null
-                  ? Text(
-                      _formatTime(lastMessage.createdAt),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    )
-                  : null,
-              onTap: onTap,
-            );
+                          return FutureBuilder<int>(
+                            future: conversationService.getUnreadCount(conversation.id),
+                            builder: (context, unreadSnapshot) {
+                              final unreadCount = unreadSnapshot.data ?? 0;
+
+                              return ListTile(
+                                leading: Stack(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                      child: user?.avatarUrl != null
+                                          ? ClipOval(
+                                              child: Image.network(
+                                                user!.avatarUrl!,
+                                                errorBuilder: (context, error, stackTrace) =>
+                                                    Text(user.initials),
+                                              ),
+                                            )
+                                          : Text(user?.initials ?? 'U'),
+                                    ),
+                                    if (unreadCount > 0)
+                                      Positioned(
+                                        right: 0,
+                                        top: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Text(
+                                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                title: Row(
+                                  children: [
+                                    Expanded(child: Text(userName)),
+                                    if (unreadCount > 0)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                subtitle: Text(
+                                  preview,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: unreadCount > 0
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                                trailing: lastMessage != null
+                                    ? Text(
+                                        _formatTime(lastMessage.createdAt),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: unreadCount > 0
+                                              ? Theme.of(context).colorScheme.primary
+                                              : Colors.grey,
+                                          fontWeight: unreadCount > 0
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      )
+                                    : null,
+                                onTap: onTap,
+                              );
+                            },
+                          );
           },
         );
       },
