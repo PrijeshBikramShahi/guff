@@ -13,44 +13,11 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
   final TextEditingController _messageController = TextEditingController();
-  List<Message> _messages = [];
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMessages();
-  }
 
   @override
   void dispose() {
     _messageController.dispose();
     super.dispose();
-  }
-
-  /// Load messages from Supabase
-  Future<void> _loadMessages() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final messages = await _chatService.getMessages();
-      setState(() {
-        _messages = messages;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('❌ Error loading messages: $e');
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading messages: $e')),
-        );
-      }
-    }
   }
 
   /// Send a message
@@ -63,8 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       await _chatService.sendMessage(text);
-      // Reload messages to show the new one
-      await _loadMessages();
+      // No need to reload - real-time stream will update automatically!
     } catch (e) {
       print('❌ Error sending message: $e');
       if (mounted) {
@@ -86,54 +52,85 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          // Messages List
+          // Messages List with Real-time Stream
           Expanded(
-            child: _isLoading && _messages.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : _messages.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No messages yet.\nSend a message to get started!',
+            child: StreamBuilder<List<Message>>(
+              stream: _chatService.getMessagesStream(),
+              builder: (context, snapshot) {
+                // Loading state
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // Error state
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading messages: ${snapshot.error}',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      )
-                    : ListView.builder(
-                        reverse: true, // Show newest at bottom
-                        padding: const EdgeInsets.all(16.0),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  message.userName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.all(12.0),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
-                                    borderRadius: BorderRadius.circular(12.0),
-                                  ),
-                                  child: Text(
-                                    message.text,
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ),
-                              ],
+                      ],
+                    ),
+                  );
+                }
+
+                // Empty state
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No messages yet.\nSend a message to get started!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  );
+                }
+
+                // Messages list
+                final messages = snapshot.data!;
+                return ListView.builder(
+                  reverse: true, // Show newest at bottom
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            message.userName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.grey,
                             ),
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            child: Text(
+                              message.text,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ],
                       ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
 
           // Message Input
