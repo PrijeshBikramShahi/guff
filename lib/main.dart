@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/chat_screen.dart';
+import 'screens/conversations_list_screen.dart';
 import 'screens/auth_screen.dart';
 import 'services/auth_service.dart';
 
@@ -65,9 +65,9 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      // Show AuthScreen if not authenticated, ChatScreen if authenticated
+      // Show AuthScreen if not authenticated, ConversationsListScreen if authenticated
       home: _authService.isAuthenticated
-          ? const ChatScreen()
+          ? const ConversationsListScreen()
           : const AuthScreen(),
     );
   }

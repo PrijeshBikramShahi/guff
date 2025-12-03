@@ -16,12 +16,28 @@ class AuthService {
 
   /// Sign up with email and password
   /// Note: Email confirmation is disabled, so user is signed in immediately
+  /// Also creates user profile in users table
   Future<void> signUpWithEmail(String email, String password) async {
     try {
       await supabase.auth.signUp(
         email: email.trim(),
         password: password,
       );
+      
+      // Ensure user profile exists (trigger should create it, but just in case)
+      final userId = supabase.auth.currentUser?.id;
+      if (userId != null) {
+        try {
+          await supabase.from('users').insert({
+            'id': userId,
+            'display_name': email.trim(),
+          }).select().maybeSingle();
+        } catch (e) {
+          // Profile might already exist, that's okay
+          print('Note: User profile may already exist');
+        }
+      }
+      
       print('✅ Sign up successful! User signed in.');
     } catch (e) {
       print('❌ Error signing up: $e');
