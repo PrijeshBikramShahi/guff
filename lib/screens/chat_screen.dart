@@ -4,6 +4,7 @@ import '../models/chat_user.dart';
 import '../services/conversation_service.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
+import '../utils/time_formatter.dart';
 import 'conversations_list_screen.dart';
 
 /// Chat screen for direct messaging in a conversation
@@ -24,12 +25,34 @@ class _ChatScreenState extends State<ChatScreen> {
   final UserService _userService = UserService();
   final AuthService _authService = AuthService();
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   ChatUser? _otherUser;
 
   @override
   void initState() {
     super.initState();
     _loadOtherUser();
+    // Scroll to bottom after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0.0, // reverse: true means 0 is bottom
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _loadOtherUser() async {
@@ -51,11 +74,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
@@ -65,6 +83,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
     try {
       await _conversationService.sendMessage(widget.conversationId, text);
+      // Scroll to bottom after sending
+      _scrollToBottom();
     } catch (e) {
       print('❌ Error sending message: $e');
       if (mounted) {
@@ -157,7 +177,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 final messages = snapshot.data!;
                 final currentUserId = _authService.currentUser?.id ?? '';
 
+                // Scroll to bottom when new messages arrive
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _scrollToBottom();
+                });
+
                 return ListView.builder(
+                  controller: _scrollController,
                   reverse: true,
                   padding: const EdgeInsets.all(16.0),
                   itemCount: messages.length,
@@ -165,60 +191,109 @@ class _ChatScreenState extends State<ChatScreen> {
                     final message = messages[index];
                     final isSentByMe = message.isSentBy(currentUserId);
 
+                    // Check if we should show timestamp (first message or time gap > 5 min)
+                    final showTimestamp = index == messages.length - 1 ||
+                        !TimeFormatter.shouldGroupMessages(
+                          message.createdAt,
+                          messages[index + 1].createdAt,
+                        );
+
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Row(
-                        mainAxisAlignment:
-                            isSentByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Column(
+                        crossAxisAlignment: isSentByMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
                         children: [
-                          if (!isSentByMe) ...[
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.grey.shade300,
-                              child: _otherUser != null && _otherUser!.avatarUrl != null
-                                  ? ClipOval(
-                                      child: Image.network(
-                                        _otherUser!.avatarUrl!,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Text(_otherUser!.initials),
-                                      ),
-                                    )
-                                  : Text(
-                                      _otherUser?.initials ?? 'U',
-                                      style: const TextStyle(fontSize: 10),
-                                    ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.all(12.0),
-                              decoration: BoxDecoration(
-                                color: isSentByMe
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(16.0),
-                              ),
+                          // Timestamp (if needed)
+                          if (showTimestamp)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
                               child: Text(
-                                message.text,
+                                TimeFormatter.formatRelative(message.createdAt),
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  color: isSentByMe ? Colors.white : Colors.black87,
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
                                 ),
                               ),
                             ),
-                          ),
-                          if (isSentByMe) ...[
-                            const SizedBox(width: 8),
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              child: Text(
-                                _authService.getUserName()?[0].toUpperCase() ?? 'U',
-                                style: const TextStyle(fontSize: 10, color: Colors.white),
+                          // Message bubble
+                          Row(
+                            mainAxisAlignment:
+                                isSentByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (!isSentByMe) ...[
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.grey.shade300,
+                                  child: _otherUser != null && _otherUser!.avatarUrl != null
+                                      ? ClipOval(
+                                          child: Image.network(
+                                            _otherUser!.avatarUrl!,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                Text(_otherUser!.initials),
+                                          ),
+                                        )
+                                      : Text(
+                                          _otherUser?.initials ?? 'U',
+                                          style: const TextStyle(fontSize: 10),
+                                        ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: isSentByMe
+                                      ? CrossAxisAlignment.end
+                                      : CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12.0,
+                                        vertical: 8.0,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSentByMe
+                                            ? Theme.of(context).colorScheme.primary
+                                            : Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(16.0),
+                                      ),
+                                      child: Text(
+                                        message.text,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: isSentByMe ? Colors.white : Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                    // Time below message
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4.0, left: 8.0, right: 8.0),
+                                      child: Text(
+                                        TimeFormatter.formatTime(message.createdAt),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                              if (isSentByMe) ...[
+                                const SizedBox(width: 8),
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                  child: Text(
+                                    _authService.getUserName()?[0].toUpperCase() ?? 'U',
+                                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     );
