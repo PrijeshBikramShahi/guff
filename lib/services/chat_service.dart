@@ -1,14 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/message.dart';
+import 'auth_service.dart';
 
 /// Service for handling chat operations with Supabase
 class ChatService {
   final SupabaseClient supabase = Supabase.instance.client;
-
-  // For now, we'll use a hardcoded user ID for testing
-  // This will be replaced with real authentication in Step 12
-  static const String _hardcodedUserId = '00000000-0000-0000-0000-000000000000';
-  static const String _hardcodedUserName = 'Test User';
+  final AuthService _authService = AuthService();
 
   /// Get all messages from Supabase (one-time fetch)
   Future<List<Message>> getMessages() async {
@@ -51,18 +48,28 @@ class ChatService {
   }
 
   /// Send a message to Supabase
-  /// Uses hardcoded user for now (will use real user in Step 12)
+  /// Uses authenticated user's information
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) {
       throw Exception('Message cannot be empty');
     }
 
+    // Check if user is authenticated
+    final user = _authService.currentUser;
+    if (user == null) {
+      throw Exception('User must be authenticated to send messages');
+    }
+
+    // Get user info from auth service
+    final userName = _authService.getUserName() ?? 'Unknown User';
+    final userAvatarUrl = _authService.getUserAvatarUrl();
+
     try {
       await supabase.from('messages').insert({
         'text': text.trim(),
-        'user_id': _hardcodedUserId,
-        'user_name': _hardcodedUserName,
-        'user_avatar_url': null, // Will add avatar in Step 13
+        'user_id': user.id,
+        'user_name': userName,
+        'user_avatar_url': userAvatarUrl,
       });
 
       print('✅ Message sent successfully!');

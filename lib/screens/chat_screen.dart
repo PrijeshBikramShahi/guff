@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/message.dart';
 import '../services/chat_service.dart';
+import '../services/auth_service.dart';
 
 /// Chat screen displaying messages and input field
 class ChatScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
+  final AuthService _authService = AuthService();
   final TextEditingController _messageController = TextEditingController();
 
   @override
@@ -49,6 +51,24 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         title: const Text('Guff Chat'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sign out',
+            onPressed: () async {
+              try {
+                await _authService.signOut();
+                // Navigation will happen automatically via auth state listener
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error signing out: $e')),
+                  );
+                }
+              }
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
