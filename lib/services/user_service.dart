@@ -17,6 +17,7 @@ class UserService {
           .from('users')
           .select()
           .neq('id', currentUserId)
+          .order('last_seen', ascending: false, nullsFirst: false)
           .order('created_at', ascending: false);
 
       return (response as List)
@@ -83,6 +84,24 @@ class UserService {
     } catch (e) {
       print('❌ Error updating profile: $e');
       rethrow;
+    }
+  }
+
+  /// Update user's last seen timestamp (call this periodically)
+  Future<void> updateLastSeen() async {
+    try {
+      final currentUserId = supabase.auth.currentUser?.id;
+      if (currentUserId == null) {
+        return; // Not authenticated, silently fail
+      }
+
+      await supabase
+          .from('users')
+          .update({'last_seen': DateTime.now().toIso8601String()})
+          .eq('id', currentUserId);
+    } catch (e) {
+      print('❌ Error updating last seen: $e');
+      // Don't throw - this is a background operation
     }
   }
 }

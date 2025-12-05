@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/conversation.dart';
 import '../models/direct_message.dart';
@@ -111,11 +112,61 @@ class ConversationService {
         'conversation_id': conversationId,
         'sender_id': currentUserId,
         'text': text.trim(),
+        'message_type': 'text',
       });
 
       print('✅ Message sent successfully');
     } catch (e) {
       print('❌ Error sending message: $e');
+      rethrow;
+    }
+  }
+
+  /// Upload image to Supabase Storage and send as message
+  Future<void> sendImage(String conversationId, String imagePath) async {
+    try {
+      final currentUserId = supabase.auth.currentUser?.id;
+      if (currentUserId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Generate unique file name
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${currentUserId.substring(0, 8)}.jpg';
+      final filePath = 'chat-images/$fileName';
+
+      // Read file from local path
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        throw Exception('Image file not found');
+      }
+
+      final fileBytes = await file.readAsBytes();
+
+      // Upload to Supabase Storage
+      await supabase.storage.from('chat-files').uploadBinary(
+        filePath,
+        fileBytes,
+        fileOptions: const FileOptions(
+          upsert: true,
+          contentType: 'image/jpeg',
+        ),
+      );
+
+      // Get public URL
+      final publicUrl = supabase.storage.from('chat-files').getPublicUrl(filePath);
+
+      // Insert message with image
+      await supabase.from('direct_messages').insert({
+        'conversation_id': conversationId,
+        'sender_id': currentUserId,
+        'text': '📷 Image',
+        'message_type': 'image',
+        'file_url': publicUrl,
+      });
+
+      print('✅ Image sent successfully');
+    } catch (e) {
+      print('❌ Error sending image: $e');
       rethrow;
     }
   }

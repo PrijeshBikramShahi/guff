@@ -188,6 +188,25 @@ class _ConversationListItem extends StatelessWidget {
                                             )
                                           : Text(user?.initials ?? 'U'),
                                     ),
+                                    // Online status indicator
+                                    if (user != null && user.isOnline)
+                                      Positioned(
+                                        right: 0,
+                                        bottom: 0,
+                                        child: Container(
+                                          width: 14,
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    // Unread count badge
                                     if (unreadCount > 0)
                                       Positioned(
                                         right: 0,

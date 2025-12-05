@@ -102,20 +102,71 @@ class _UsersListScreenState extends State<UsersListScreen> {
             itemBuilder: (context, index) {
               final user = users[index];
               return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: user.avatarUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            user.avatarUrl!,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Text(user.initials),
+                leading: Stack(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: user.avatarUrl != null
+                          ? ClipOval(
+                              child: Image.network(
+                                user.avatarUrl!,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Text(user.initials),
+                              ),
+                            )
+                          : Text(user.initials),
+                    ),
+                    // Online status indicator
+                    if (user.isOnline)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
                           ),
-                        )
-                      : Text(user.initials),
+                        ),
+                      ),
+                  ],
                 ),
                 title: Text(user.name),
-                subtitle: user.email != null ? Text(user.email!) : null,
+                subtitle: Row(
+                  children: [
+                    if (user.isOnline)
+                      Text(
+                        'Online',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                        ),
+                      )
+                    else
+                      Text(
+                        user.lastSeenText,
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    if (user.email != null && !user.isOnline) ...[
+                      const Text(' • ', style: TextStyle(color: Colors.grey)),
+                      Expanded(
+                        child: Text(
+                          user.email!,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 onTap: () => _startConversation(user),
               );
             },

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/conversations_list_screen.dart';
 import 'screens/auth_screen.dart';
 import 'services/auth_service.dart';
+import 'services/user_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +46,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final AuthService _authService = AuthService();
+  Timer? _lastSeenTimer;
 
   @override
   void initState() {
@@ -54,7 +57,55 @@ class _MyAppState extends State<MyApp> {
       if (mounted) {
         setState(() {});
       }
+      
+      // Start/stop last seen updates based on auth state
+      if (state.event == AuthChangeEvent.signedIn) {
+        _startLastSeenUpdates();
+      } else if (state.event == AuthChangeEvent.signedOut) {
+        _stopLastSeenUpdates();
+      }
     });
+    
+    // Update last seen periodically when authenticated
+    if (_authService.isAuthenticated) {
+      _startLastSeenUpdates();
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopLastSeenUpdates();
+    super.dispose();
+  }
+
+  void _startLastSeenUpdates() {
+    _stopLastSeenUpdates(); // Stop any existing timer
+    
+    // Update last seen every 2 minutes
+    _lastSeenTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (!_authService.isAuthenticated) {
+        timer.cancel();
+        return;
+      }
+      _updateLastSeen();
+    });
+    
+    // Also update immediately
+    _updateLastSeen();
+  }
+
+  void _stopLastSeenUpdates() {
+    _lastSeenTimer?.cancel();
+    _lastSeenTimer = null;
+  }
+
+  Future<void> _updateLastSeen() async {
+    try {
+      final userService = UserService();
+      await userService.updateLastSeen();
+    } catch (e) {
+      // Silently fail
+    }
   }
 
   @override

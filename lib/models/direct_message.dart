@@ -6,6 +6,10 @@ class DirectMessage {
   final String text;
   final DateTime createdAt;
   final DateTime? readAt;
+  final String messageType; // 'text', 'image', 'file'
+  final String? fileUrl;
+  final String? fileName;
+  final int? fileSize;
 
   DirectMessage({
     required this.id,
@@ -14,6 +18,10 @@ class DirectMessage {
     required this.text,
     required this.createdAt,
     this.readAt,
+    this.messageType = 'text',
+    this.fileUrl,
+    this.fileName,
+    this.fileSize,
   });
 
   /// Create DirectMessage from Supabase JSON response
@@ -27,6 +35,10 @@ class DirectMessage {
       readAt: json['read_at'] != null
           ? DateTime.parse(json['read_at'] as String)
           : null,
+      messageType: json['message_type'] as String? ?? 'text',
+      fileUrl: json['file_url'] as String?,
+      fileName: json['file_name'] as String?,
+      fileSize: json['file_size'] != null ? json['file_size'] as int : null,
     );
   }
 
@@ -48,6 +60,12 @@ class DirectMessage {
 
   /// Check if message has been read
   bool get isRead => readAt != null;
+
+  /// Check if message is an image
+  bool get isImage => messageType == 'image' && fileUrl != null;
+
+  /// Check if message is a file
+  bool get isFile => messageType == 'file' && fileUrl != null;
 
   @override
   String toString() {
